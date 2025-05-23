@@ -1,0 +1,17 @@
+{
+  "name": "websocket-api-streamer",
+  "version": "1.0.0",
+  "description": "A WebSocket server that fetches API content based on handshake data and streams it to each client individually.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": ["websocket", "api", "stream", "nodejs", "ws"],
+  "author": "Erfan",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.8",
+    "uuid": "^9.0.0",
+    "ws": "^8.13.0"
+  }
+}
