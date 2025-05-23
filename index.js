@@ -13,37 +13,55 @@ wss.on("connection", (socket) => {
   console.log(`Client connected: ${clientId}`);
 
   let interval;
-  let apiUrl = null;
+  let apiUrl = `https://zedline.ir/api/index.php`; // پیش‌فرض اگر چیزی نیاد
 
-  socket.on("message", async (message) => {
+  // این تابع کار ارسال داده رو انجام می‌ده
+  const startSending = () => {
+    interval = setInterval(async () => {
+      try {
+        const response = await axios.get(apiUrl);
+        socket.send(JSON.stringify({
+          id: clientId,
+          data: response.data,
+        }));
+      } catch (err) {
+        socket.send(JSON.stringify({
+          id: clientId,
+          error: "Failed to fetch data from API",
+        }));
+      }
+    }, 1000);
+  };
+
+  let hasReceivedInitialMessage = false;
+
+  socket.on("message", (message) => {
     try {
       const data = JSON.parse(message);
       if (data.api) {
         apiUrl = `https://zedline.ir/api/${data.api}/`;
-        console.log(`Client ${clientId} requested URL: ${apiUrl}`);
-
-        interval = setInterval(async () => {
-          try {
-            const response = await axios.get(apiUrl);
-            socket.send(JSON.stringify({
-              id: clientId,
-              data: response.data,
-            }));
-          } catch (err) {
-            socket.send(JSON.stringify({
-              id: clientId,
-              error: "Failed to fetch data from API",
-            }));
-          }
-        }, 1000);
+        console.log(`Client ${clientId} set custom API: ${apiUrl}`);
       }
     } catch (err) {
       socket.send(JSON.stringify({
         id: clientId,
-        error: "Invalid JSON or missing 'api' field.",
+        error: "Invalid JSON format.",
       }));
     }
+
+    if (!hasReceivedInitialMessage) {
+      hasReceivedInitialMessage = true;
+      if (!interval) startSending();
+    }
   });
+
+  // اگر تا 2 ثانیه بعد از اتصال هیچ پیامی نیاد، لینک پیش‌فرض استفاده می‌شه
+  setTimeout(() => {
+    if (!hasReceivedInitialMessage && !interval) {
+      console.log(`Client ${clientId} did not send initial data. Using default URL.`);
+      startSending();
+    }
+  }, 2000);
 
   socket.on("close", () => {
     console.log(`Client disconnected: ${clientId}`);
